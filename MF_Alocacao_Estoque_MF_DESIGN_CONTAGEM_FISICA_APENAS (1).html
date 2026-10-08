@@ -1060,7 +1060,7 @@ function renderPurchaseRequests(){
   }).join(""):`<tr><td colspan="8" class="empty">Nenhuma solicitação encontrada.</td></tr>`;
   document.getElementById("purchaseSummary").textContent=`${rows.length} solicitação(ões) • ${rows.filter(x=>x.status==="Pendente").length} pendente(s)`;
 }
-async function deletePurchaseRequestAdmin(id){if(!confirm("Excluir esta solicitação do aplicativo para todos?"))return;const response=await fetch(`/api/purchase-requests/${encodeURIComponent(id)}/admin`,{method:"DELETE",credentials:"same-origin"});if(!response.ok){showToast("Não foi possível excluir a solicitação.");return}window.purchaseRequestRows=(window.purchaseRequestRows||[]).filter(row=>row.id!==id);renderPurchaseRequests();showToast("Solicitação excluída para todos.");}
+async function deletePurchaseRequestAdmin(id){if(!confirm("Excluir esta solicitação do aplicativo para todos?"))return;const url=`/api/purchase-requests/${encodeURIComponent(id)}`;let response=await fetch(`${url}/admin`,{method:"DELETE",credentials:"same-origin"});if(!response.ok)response=await fetch(url,{method:"DELETE",credentials:"same-origin"});if(!response.ok){let detail="";try{detail=(await response.json()).error||""}catch{}showToast(detail||"Não foi possível excluir a solicitação.");return}window.purchaseRequestRows=(window.purchaseRequestRows||[]).filter(row=>row.id!==id);renderPurchaseRequests();showToast("Solicitação excluída para todos.");}
 function openPurchaseReason(id){
   const row=(window.purchaseRequestRows||[]).find(x=>x.id===id);if(!row)return;
   if(!canApprovePurchases()&&!isCurrentPurchaseRequester(row)){showToast("A justificativa fica disponível ao Rafael e ao solicitante.");return}
