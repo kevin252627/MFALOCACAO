@@ -1,4 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 280" role="img" aria-label="MF">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 280" role="img" aria-labelledby="title">
+  <title id="title">MF Tecnologia para Pecuária Leiteira</title>
   <rect width="640" height="280" rx="24" fill="#ffffff"/>
-  <text x="320" y="190" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="170" font-weight="900" font-style="italic" letter-spacing="-14" fill="#173b5d">MF</text>
+  <g fill="#173b5d">
+    <path d="M54 214 105 55h61l35 82 87-82h62l-52 159h-57l27-84-65 61h-35l-28-61-27 84z"/>
+    <path d="M344 55h222l-17 51H402l-14 39h124l-16 49H371l-7 20h-65z"/>
+  </g>
+  <text x="455" y="210" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#173b5d">TECNOLOGIA PARA</text>
+  <text x="455" y="226" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" fill="#173b5d">PECUÁRIA LEITEIRA</text>
 </svg>
