@@ -511,11 +511,11 @@ app.delete('/api/purchase-requests/:id', async (req, res, next) => {
     }
     const request = await prisma.purchaseRequest.findUnique({ where: { id: req.params.id }, select: { usuarioId: true, solicitante: true } });
     if (!request) return res.status(404).json({ error: 'Solicitação não encontrada.' });
-    const legacyRequesterNames = { mf01: 'davy', mf02: 'gabriel', mf03: 'visitante' };
+    const legacyRequesterNames = { mf01: 'davy', mf02: 'gabriel', mf03: 'visitante', davy: 'davy', gabriel: 'gabriel', usuario: 'usuario' };
     const requesterName = req.user?.nome;
     const requesterAccount = req.user?.role === 'user';
     const submittedName = String(request.solicitante || '').trim().toLowerCase();
-    const isRequester = request.usuarioId === req.user.id || submittedName === String(requesterName || '').trim().toLowerCase() || submittedName === legacyRequesterNames[req.user?.accountKey];
+    const isRequester = request.usuarioId === req.user.id || submittedName === String(requesterName || '').trim().toLowerCase() || submittedName === legacyRequesterNames[req.user?.accountKey] || submittedName === legacyRequesterNames[String(req.user?.username || '').toLowerCase()];
     if (!requesterAccount || !isRequester) return res.status(403).json({ error: 'Somente o solicitante pode excluir esta solicitação.' });
     await prisma.purchaseRequest.delete({ where: { id: req.params.id } });
     res.json({ ok: true });
