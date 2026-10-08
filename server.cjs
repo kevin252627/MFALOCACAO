@@ -505,6 +505,10 @@ app.delete('/api/purchase-requests/:id/admin', adminOnly, async (req, res, next)
 app.delete('/api/purchase-requests/:id', async (req, res, next) => {
   try {
     if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
+    if (req.user.role === 'admin') {
+      await prisma.purchaseRequest.delete({ where: { id: req.params.id } });
+      return res.json({ ok: true, deletedForAll: true });
+    }
     const request = await prisma.purchaseRequest.findUnique({ where: { id: req.params.id }, select: { usuarioId: true, solicitante: true } });
     if (!request) return res.status(404).json({ error: 'Solicitação não encontrada.' });
     const legacyRequesterNames = { mf01: 'davy', mf02: 'gabriel', mf03: 'visitante' };
