@@ -68,12 +68,13 @@ async function sendMail(subject, text, to) {
   if (!mailer || !process.env.SMTP_FROM) return;
   await mailer.sendMail({ from: process.env.SMTP_FROM, to, subject, text });
 }
+async function adminEmail(accountKey, fallback) { const user = await prisma.appUser.findUnique({ where: { accountKey }, select: { email: true } }); return user?.email || fallback; }
 async function sendDailyPurchaseDigest() {
   if (!databaseReady) return;
   const requests = await prisma.purchaseRequest.findMany({ where: { status: 'Pendente' }, orderBy: { criadoEm: 'asc' } });
   if (!requests.length) return;
   const lines = requests.map(row => `- ${row.item} | código ${row.codigo || '-'} | quantidade ${row.quantidade} | unidade ${row.unidade} | solicitante ${row.solicitante}`).join('\n');
-  await sendMail('MF Estoque — solicitações de compra pendentes', `Todas as solicitações de compra ainda pendentes:\n\n${lines}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com']);
+  await sendMail('MF Estoque — solicitações de compra pendentes', `Todas as solicitações de compra ainda pendentes:\n\n${lines}`, [await adminEmail('rafael', 'rafael.souza@mfordenhas.com.br'), await adminEmail('kevin', 'contato.mfordenhas@gmail.com')]);
 }
 async function provisionAccounts() {
   const accounts = configuredAccounts();
@@ -235,7 +236,7 @@ const kevinSettingsOnly = (req, res, next) => isKevinAccount(req.user)
   : res.status(403).json({ error: 'Configurações restritas ao Kevin01.' });
 app.get('/api/admin/users', kevinSettingsOnly, async (_req, res, next) => {
   try {
-    res.json(await prisma.appUser.findMany({ select: { id: true, accountKey: true, username: true, nome: true, role: true }, orderBy: [{ role: 'desc' }, { criadoEm: 'asc' }] }));
+    res.json(await prisma.appUser.findMany({ select: { id: true, accountKey: true, username: true, nome: true, email: true, role: true }, orderBy: [{ role: 'desc' }, { criadoEm: 'asc' }] }));
   } catch (error) { next(error); }
 });
 app.patch('/api/admin/users/:id', kevinSettingsOnly, async (req, res, next) => {
@@ -243,20 +244,22 @@ app.patch('/api/admin/users/:id', kevinSettingsOnly, async (req, res, next) => {
     const id = String(req.params.id || '');
     const username = String(req.body.username || '').trim().toLowerCase();
     const nome = String(req.body.nome || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
     const newPassword = String(req.body.newPassword || '');
     if (!/^[a-z0-9._-]{3,80}$/.test(username)) return res.status(400).json({ error: 'O login deve ter de 3 a 80 caracteres: letras, números, ponto, hífen ou sublinhado.' });
     if (newPassword && (newPassword.length < 8 || newPassword.length > 200)) return res.status(400).json({ error: 'A nova senha deve ter pelo menos 8 caracteres.' });
     const account = await prisma.appUser.findUnique({ where: { id }, select: { id: true, username: true, nome: true, role: true } });
     if (!account) return res.status(404).json({ error: 'Acesso não encontrado.' });
     if (nome.length < 1 || nome.length > 150) return res.status(400).json({ error: 'Informe um nome com até 150 caracteres.' });
-    const update = { username, nome };
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: 'Informe um e-mail válido.' });
+    const update = { username, nome, email: email || null };
     if (newPassword) {
       const salt = crypto.randomBytes(16).toString('hex');
       const hash = (await scrypt(newPassword, salt, 64)).toString('hex');
       update.passwordHash = `${salt}:${hash}`;
     }
     const user = await prisma.$transaction(async tx => {
-      const updated = await tx.appUser.update({ where: { id }, data: update, select: { id: true, accountKey: true, username: true, nome: true, role: true } });
+      const updated = await tx.appUser.update({ where: { id }, data: update, select: { id: true, accountKey: true, username: true, nome: true, email: true, role: true } });
       await tx.purchaseRequest.updateMany({
         where: { OR: [{ usuarioId: id }, { usuarioId: null, solicitante: { equals: account.nome, mode: 'insensitive' } }] },
         data: { solicitante: nome }
@@ -504,7 +507,7 @@ app.post('/api/purchase-requests', async (req, res, next) => {
     const requesterLabel = ({ davy: 'davy', gabriel: 'gabriel', usuario: 'usuario' })[String(req.user.username || '').toLowerCase()] || String(req.user.nome || '').trim().toLowerCase();
     await notifyAccounts(['rafael'], 'Nova solicitação para aprovação', `${requesterLabel} solicitou compra.`);
     const lines = items.map(row => `- ${row.item} | código ${row.codigo || '-'} | quantidade ${row.quantidade} | unidade ${row.unidade} | solicitante ${row.solicitante}\n  Motivo: ${row.justificativa}`).join('\n');
-    sendMail('MF Estoque — nova solicitação de compra', `Uma nova solicitação de compra foi criada:\n\n${lines}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com'])
+    adminEmail('rafael', 'rafael.souza@mfordenhas.com.br').then(to => sendMail('MF Estoque — nova solicitação de compra', `Uma nova solicitação de compra foi criada:\n\n${lines}`, to))
       .catch(error => console.error('Falha ao enviar e-mail imediato de compra:', error));
     res.json({ ok: true, total: items.length });
   } catch (error) { next(error); }
@@ -520,7 +523,7 @@ app.patch('/api/purchase-requests/:id/status', purchaseStatusApproverOnly, async
     const updated = await prisma.purchaseRequest.update({ where: { id: req.params.id }, data: { status }, include: { usuario: true } });
     if (status === 'Aprovada') {
       await notifyAccounts(['kevin'], 'Solicitação aprovada', 'rafael aprovou solicitação de compra.');
-      await sendMail('MF Estoque — solicitação aprovada', `A solicitação abaixo foi aprovada:\n\nItem: ${updated.item}\nCódigo: ${updated.codigo || '-'}\nQuantidade: ${updated.quantidade}\nSolicitante: ${updated.solicitante}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com']);
+      await sendMail('MF Estoque — solicitação aprovada', `A solicitação abaixo foi aprovada:\n\nItem: ${updated.item}\nCódigo: ${updated.codigo || '-'}\nQuantidade: ${updated.quantidade}\nSolicitante: ${updated.solicitante}`, await adminEmail('kevin', 'contato.mfordenhas@gmail.com'));
     }
     res.json(updated);
   } catch (error) { next(error); }
