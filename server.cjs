@@ -476,6 +476,9 @@ app.post('/api/purchase-requests', async (req, res, next) => {
     if (items.length !== req.body.items.length) return res.status(400).json({ error: 'Uma ou mais solicitações são inválidas.' });
     await prisma.purchaseRequest.createMany({ data: items, skipDuplicates: true });
     await notifyAdmins('Nova solicitação de compra', `${items.length} solicitação(ões) nova(s) criada(s) por ${req.user.nome}.`);
+    const lines = items.map(row => `- ${row.item} | código ${row.codigo || '-'} | quantidade ${row.quantidade} | unidade ${row.unidade} | solicitante ${row.solicitante}\n  Motivo: ${row.justificativa}`).join('\n');
+    sendMail('MF Estoque — nova solicitação de compra', `Uma nova solicitação de compra foi criada:\n\n${lines}`, 'rafael.souza@mfordenhas.com.br')
+      .catch(error => console.error('Falha ao enviar e-mail imediato de compra:', error));
     res.json({ ok: true, total: items.length });
   } catch (error) { next(error); }
 });
