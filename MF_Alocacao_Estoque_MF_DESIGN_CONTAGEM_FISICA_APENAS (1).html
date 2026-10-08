@@ -1053,7 +1053,7 @@ function renderPurchaseRequests(){
     const user=window.currentUser;
     const canDelete=isCurrentPurchaseRequester(x);
     const adminRemove=window.currentUser?.role==="admin"?` <button type="button" class="danger" style="height:34px;padding:0 10px;font-size:12px" onclick="deletePurchaseRequestAdmin('${esc(x.id)}')">Excluir tudo</button>`:"";
-    const photoAction=x.temFoto&&canApprovePurchases()?` <button type="button" class="secondary" style="height:34px;padding:0 10px;font-size:12px" onclick="viewPurchasePhoto('${esc(x.id)}')">Ver foto</button>`:"";
+    const photoAction=(x.temFoto||x.fotoData)&&(isKevinUser()||isRafaelUser())?` <button type="button" class="secondary" style="height:34px;padding:0 10px;font-size:12px" onclick="viewPurchasePhoto('${esc(x.id)}')">Ver foto</button>`:"";
     const remove=(canDelete?` <button type="button" class="danger" style="height:34px;padding:0 10px;font-size:12px" onclick="deletePurchaseRequest('${esc(x.id)}')">Excluir</button>`:"")+adminRemove+photoAction;
     const genericRequester=String(x.solicitante||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().match(/^usu.?rio\s+([123])$/);
     const genericNames={"1":"davy","2":"GABRIEL","3":"visitante"};
