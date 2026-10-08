@@ -223,6 +223,7 @@ app.use('/api', requireAuth);
 app.use('/api', (req, res, next) => databaseReady ? next() : res.status(503).json({ error: 'Banco de dados inicializando. Tente novamente em instantes.' }));
 app.get('/api/notifications', async (req, res, next) => {
   try {
+    await prisma.notification.deleteMany({ where: { usuarioId: req.user.id, lida: true, criadoEm: { lt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) } } });
     const notifications = await prisma.notification.findMany({ where: { usuarioId: req.user.id }, orderBy: { criadoEm: 'desc' }, take: 50 });
     res.json({ unread: notifications.filter(item => !item.lida).length, notifications });
   } catch (error) { next(error); }
