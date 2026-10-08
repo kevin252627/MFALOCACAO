@@ -1072,7 +1072,7 @@ function openPurchaseReason(id){
   document.getElementById("purchaseReasonTitle").textContent="Justificativa da solicitação";
   document.getElementById("purchaseReasonSub").textContent=`${row.item||"Produto"} • ${row.unidade==="filial"?"Filial":"Matriz"} • Quantidade: ${Number(row.quantidade)||0}`;
   document.getElementById("purchaseReasonText").textContent=String(row.justificativa||"").trim()||"Este pedido antigo não possui justificativa registrada.";
-  const photoButton=document.getElementById("purchasePhotoModalButton");photoButton.hidden=!(row.temFoto||row.fotoData)&&(false||!(isKevinUser()||isRafaelUser()));if(!photoButton.hidden)photoButton.onclick=()=>viewPurchasePhoto(id);
+  const photoButton=document.getElementById("purchasePhotoModalButton");photoButton.hidden=!(row.temFoto||row.fotoData)||!(isKevinUser()||isRafaelUser());if(!photoButton.hidden)photoButton.onclick=()=>viewPurchasePhoto(id);
   document.getElementById("purchaseReasonModal").classList.add("show");
 }
 function closePurchaseReason(){document.getElementById("purchaseReasonModal")?.classList.remove("show")}
