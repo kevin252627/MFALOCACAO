@@ -1053,7 +1053,8 @@ function renderPurchaseRequests(){
     const user=window.currentUser;
     const canDelete=isCurrentPurchaseRequester(x);
     const adminRemove=window.currentUser?.role==="admin"?` <button type="button" class="danger" style="height:34px;padding:0 10px;font-size:12px" onclick="deletePurchaseRequestAdmin('${esc(x.id)}')">Excluir tudo</button>`:"";
-    const remove=(canDelete?` <button type="button" class="danger" style="height:34px;padding:0 10px;font-size:12px" onclick="deletePurchaseRequest('${esc(x.id)}')">Excluir</button>`:"")+adminRemove;
+    const photoAction=x.temFoto&&canApprovePurchases()?` <button type="button" class="secondary" style="height:34px;padding:0 10px;font-size:12px" onclick="viewPurchasePhoto('${esc(x.id)}')">Ver foto</button>`:"";
+    const remove=(canDelete?` <button type="button" class="danger" style="height:34px;padding:0 10px;font-size:12px" onclick="deletePurchaseRequest('${esc(x.id)}')">Excluir</button>`:"")+adminRemove+photoAction;
     const genericRequester=String(x.solicitante||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().match(/^usu.?rio\s+([123])$/);
     const genericNames={"1":"davy","2":"GABRIEL","3":"visitante"};
     const requesterName=x.usuario?.nome||x.solicitante||"—";
@@ -1064,6 +1065,7 @@ function renderPurchaseRequests(){
   document.getElementById("purchaseSummary").textContent=`${rows.length} solicitação(ões) • ${rows.filter(x=>x.status==="Pendente").length} pendente(s)`;
 }
 async function deletePurchaseRequestAdmin(id){if(!confirm("Excluir esta solicitação do aplicativo para todos?"))return;const url=`/api/purchase-requests/${encodeURIComponent(id)}`;let response=await fetch(`${url}/admin`,{method:"DELETE",credentials:"same-origin"});if(!response.ok)response=await fetch(url,{method:"DELETE",credentials:"same-origin"});if(!response.ok){let detail="";try{detail=(await response.json()).error||""}catch{}showToast(detail||"Não foi possível excluir a solicitação.");return}window.purchaseRequestRows=(window.purchaseRequestRows||[]).filter(row=>row.id!==id);renderPurchaseRequests();showToast("Solicitação excluída para todos.");}
+function viewPurchasePhoto(id){const image=window.open(`/api/purchase-requests/${encodeURIComponent(id)}/photo`,`_blank`,`noopener,noreferrer`);if(!image)showToast("Permita a abertura da nova aba para visualizar a foto.");}
 function openPurchaseReason(id){
   const row=(window.purchaseRequestRows||[]).find(x=>x.id===id);if(!row)return;
   if(!canApprovePurchases()&&!isCurrentPurchaseRequester(row)){showToast("A justificativa fica disponível ao Rafael e ao solicitante.");return}
