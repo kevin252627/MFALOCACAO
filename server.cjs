@@ -9,6 +9,8 @@ const { PrismaClient } = require('@prisma/client');
 const { createCountWorkbook } = require('./spreadsheet-export.cjs');
 const prisma = new PrismaClient();
 const app = express();
+app.disable('x-powered-by');
+app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? 1 : false);
 const port = Number(process.env.PORT || 3000);
 const htmlFile = 'MF_Alocacao_Estoque_MF_DESIGN_CONTAGEM_FISICA_APENAS (1).html';
 const validUnits = new Set(['matriz', 'filial']);
@@ -16,7 +18,8 @@ const normalizedAccountName = user => String(user?.nome || '').normalize('NFD').
 const isKevinAccount = user => user?.role === 'admin' && (user?.accountKey === 'kevin' || String(user.username || '').toLowerCase() === 'kevin01' || normalizedAccountName(user).startsWith('kevin'));
 const isRafaelAccount = user => user?.role === 'admin' && (user?.accountKey === 'rafael' || String(user.username || '').toLowerCase() === 'rafael02' || normalizedAccountName(user).startsWith('rafael'));
 const canEditInventoryCodes = req => isKevinAccount(req.user);
-const sessionSecret = process.env.AUTH_SECRET || crypto.randomBytes(32).toString('hex');
+const sessionSecret = process.env.AUTH_SECRET;
+if (!sessionSecret || sessionSecret.length < 32) throw new Error('AUTH_SECRET deve ter pelo menos 32 caracteres.');
 const scrypt = promisify(crypto.scrypt);
 const execFileAsync = promisify(execFile);
 let databaseReady = false;
@@ -128,6 +131,14 @@ function requireAuth(req, res, next) {
 }
 
 app.use(express.json({ limit: '2mb' }));
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'same-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  if (process.env.COOKIE_SECURE === 'true') res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
 app.get('/api/health', async (_req, res) => {
   if (!databaseReady) return res.status(503).json({ ok: false, database: 'initializing' });
   try { await prisma.$queryRaw`SELECT 1`; res.json({ ok: true, database: 'postgresql' }); }
@@ -148,6 +159,7 @@ app.post('/api/auth/login', async (req, res, next) => {
       else { failure.count += 1; loginFailures.set(attemptKey, failure); }
       return res.status(401).json({ error: 'Usuário ou senha inválidos.' });
     };
+    if (!/^[a-z0-9._-]{3,80}$/.test(username) || password.length < 8 || password.length > 200) return invalidLogin();
     const user = await prisma.appUser.findUnique({ where: { username } });
     if (!user) return invalidLogin();
     const [salt, savedHash] = user.passwordHash.split(':');
@@ -220,12 +232,13 @@ app.put('/api/inventory/:unit', async (req, res, next) => {
   try {
     const unidade = req.params.unit;
     if (!validUnits.has(unidade)) return res.status(400).json({ error: 'Unidade inválida.' });
-    if (!Array.isArray(req.body.items)) return res.status(400).json({ error: 'Informe a lista items.' });
+    if (!Array.isArray(req.body.items) || req.body.items.length > 10000) return res.status(400).json({ error: 'Lista de itens inválida ou grande demais.' });
     const existingItems = canEditInventoryCodes(req) ? [] : await prisma.inventoryItem.findMany({ where: { unidade }, select: { ordem: true, codigo: true } });
     const existingCodes = new Map(existingItems.map(row => [row.ordem, row.codigo]));
     const operations = req.body.items.map((row, ordem) => {
       const codigo = canEditInventoryCodes(req) ? String(row.codigo || '').trim() : (existingCodes.get(ordem) || String(row.codigo || '').trim());
       const item = String(row.item || '').trim();
+      if (codigo.length > 50 || item.length > 500 || String(row.prateleira || '').length > 150) throw new Error('Dados do estoque inválidos.');
       return prisma.inventoryItem.upsert({
         where: { unidade_ordem: { unidade, ordem } },
         update: { codigo, item, prateleira: String(row.prateleira || '') },
@@ -324,14 +337,16 @@ app.put('/api/counts/:unit', async (req, res, next) => {
   try {
     const unidade = req.params.unit;
     if (!validUnits.has(unidade)) return res.status(400).json({ error: 'Unidade inválida.' });
-    if (!Array.isArray(req.body.items)) return res.status(400).json({ error: 'Informe a lista items.' });
+    if (!Array.isArray(req.body.items) || req.body.items.length > 10000) return res.status(400).json({ error: 'Lista de contagens inválida ou grande demais.' });
     const canEditInformedStock = isKevinAccount(req.user);
     const existingCounts = await prisma.stockCount.findMany({ where: { unidade }, select: { ordem: true, sistema: true } });
     const informedStockByOrder = new Map(existingCounts.map(row => [row.ordem, row.sistema]));
     const operations = req.body.items.map((row, ordem) => {
       const codigo = String(row.codigo || '').trim();
       const item = String(row.item || '').trim();
-      const contagemFisica = row.contagem === '' || row.contagem == null ? null : Math.max(0, Number(row.contagem));
+      const parsedCount = row.contagem === '' || row.contagem == null ? null : Number(row.contagem);
+      if (parsedCount !== null && (!Number.isSafeInteger(parsedCount) || parsedCount < 0)) throw new Error('Contagem inválida.');
+      const contagemFisica = parsedCount;
       const sistema = canEditInformedStock
         ? Math.max(0, Number(row.sistema) || 0)
         : informedStockByOrder.get(ordem) ?? 0;
@@ -412,7 +427,11 @@ app.get('/api/count-sessions/:id/download', async (req, res, next) => {
 
 app.get('/api/purchase-requests', async (req, res, next) => {
   try {
-    const requests = await prisma.purchaseRequest.findMany({ include: { usuario: { select: { id: true, accountKey: true, username: true, nome: true } } }, orderBy: { criadoEm: 'desc' } });
+    const requests = await prisma.purchaseRequest.findMany({
+      where: req.user.role === 'admin' ? undefined : { usuarioId: req.user.id },
+      include: { usuario: { select: { id: true, accountKey: true, username: true, nome: true } } },
+      orderBy: { criadoEm: 'desc' }
+    });
     res.json(requests.map(row => row.usuario?.nome ? { ...row, solicitante: row.usuario.nome } : row));
   } catch (error) { next(error); }
 });
@@ -434,6 +453,7 @@ app.post('/api/purchase-requests', async (req, res, next) => {
 });
 app.patch('/api/purchase-requests/:id/status', purchaseStatusApproverOnly, async (req, res, next) => {
   try {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
     const status = String(req.body.status || '');
     if (!['Pendente', 'Aprovada', 'Rejeitada'].includes(status)) return res.status(400).json({ error: 'Status inválido.' });
     res.json(await prisma.purchaseRequest.update({ where: { id: req.params.id }, data: { status } }));
@@ -446,7 +466,7 @@ app.delete('/api/purchase-requests/:id', async (req, res, next) => {
     if (!request) return res.status(404).json({ error: 'Solicitação não encontrada.' });
     const legacyRequesterNames = { mf01: 'davy', mf02: 'gabriel', mf03: 'visitante' };
     const requesterName = req.user?.nome;
-    const requesterAccount = req.user?.role === 'user' && ['mf01', 'mf02', 'mf03'].includes(req.user?.accountKey);
+    const requesterAccount = req.user?.role === 'user';
     const submittedName = String(request.solicitante || '').trim().toLowerCase();
     const isRequester = request.usuarioId === req.user.id || submittedName === String(requesterName || '').trim().toLowerCase() || submittedName === legacyRequesterNames[req.user?.accountKey];
     if (!requesterAccount || !isRequester) return res.status(403).json({ error: 'Somente o solicitante pode excluir esta solicitação.' });
