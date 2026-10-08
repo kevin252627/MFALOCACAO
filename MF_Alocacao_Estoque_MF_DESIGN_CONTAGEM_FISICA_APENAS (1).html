@@ -244,6 +244,9 @@ body[data-theme="light"] tr:hover td{background:#eef5ff}
 body[data-theme="light"] .login-screen{background:radial-gradient(circle at 20% 0%,#bfdbff,transparent 42%),#eef5ff;color:#10233d}
 body[data-theme="light"] .login-card{background:#fff;color:#10233d;border-color:#c5d8ee}
 body[data-theme="light"] .login-card p{color:#526b89}
+body[data-theme="light"] .primary{background:linear-gradient(135deg,#173b5d,#28658c);color:#fff}
+body[data-theme="light"] .secondary,body[data-theme="light"] .theme-toggle,body[data-theme="light"] .notification-button{color:#173b5d;border-color:#8eb4cf;background:#fff}
+body[data-theme="light"] button,body[data-theme="light"] label,body[data-theme="light"] h1,body[data-theme="light"] h2,body[data-theme="light"] h3{color:#173b5d}
 body[data-theme="light"] .shelf{background:linear-gradient(135deg,#173b5d,#28658c);border-color:#28658c;color:#fff}
 body[data-theme="light"] .actions .danger,body[data-theme="light"] .danger{background:linear-gradient(135deg,#173b5d,#28658c);border-color:#28658c;color:#fff}
 .settings-card{background:var(--mf-card);border:1px solid var(--mf-line);border-radius:15px;padding:18px;margin-bottom:16px}
@@ -484,6 +487,7 @@ function setAppTheme(theme){
   localStorage.setItem("mf_app_theme_v1",selected);
   const choice=document.getElementById("appThemeSelect");if(choice)choice.value=selected;
   const toggle=document.getElementById("themeToggle");if(toggle){toggle.textContent=selected==="light"?"☾ Tema escuro":"☼ Tema claro";toggle.setAttribute("aria-label",selected==="light"?"Ativar tema escuro":"Ativar tema claro");}
+  const logo=document.querySelector(".logoImg");if(logo)logo.src=selected==="light"?"./app-logo-light.svg":"./app-icon.svg";
 }
 function toggleAppTheme(){setAppTheme(document.body.dataset.theme==="light"?"dark":"light");}
 async function loadNotifications(){
@@ -493,6 +497,8 @@ async function loadNotifications(){
 }
 async function toggleNotifications(){const panel=document.getElementById("notificationPanel");panel.classList.toggle("show");if(panel.classList.contains("show")){await loadNotifications();await fetch("/api/notifications/read",{method:"PATCH",credentials:"same-origin"});document.getElementById("notificationBadge").hidden=true;}}
 setAppTheme(localStorage.getItem("mf_app_theme_v1")||"dark");
+function applyLightLogo(){const logo=document.querySelector(".logoImg");if(logo&&document.body.dataset.theme==="light")logo.src="./app-logo-light.svg";}
+applyLightLogo();
 async function loadAppSettings(){
   const target=document.getElementById("settingsAccounts");if(!target)return;
   target.textContent="Carregando acessos...";
