@@ -59,6 +59,8 @@ model PurchaseRequest {
   unidade      String   @db.VarChar(20)
   solicitante  String   @default("") @db.VarChar(150)
   justificativa String  @default("")
+  fotoData     String?  @map("foto_data") @db.Text
+  fotoNome     String?  @map("foto_nome") @db.VarChar(180)
   status       String   @default("Pendente") @db.VarChar(30)
   usuarioId    String?  @map("usuario_id") @db.Uuid
   usuario      AppUser? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)

@@ -472,7 +472,7 @@ app.get('/api/purchase-requests', async (req, res, next) => {
       include: { usuario: { select: { id: true, accountKey: true, username: true, nome: true } } },
       orderBy: { criadoEm: 'desc' }
     });
-    res.json(requests.map(row => row.usuario?.nome ? { ...row, solicitante: row.usuario.nome } : row));
+    res.json(requests.map(row => { const { fotoData, ...safe } = row; return { ...(row.usuario?.nome ? { ...safe, solicitante: row.usuario.nome } : safe), temFoto: Boolean(fotoData) }; }));
   } catch (error) { next(error); }
 });
 app.post('/api/purchase-requests', async (req, res, next) => {
@@ -484,6 +484,8 @@ app.post('/api/purchase-requests', async (req, res, next) => {
       item: String(row.item || '').trim(), quantidade: Math.floor(Number(row.quantidade)),
       unidade: String(row.unidade || ''), solicitante: String(req.user.nome || row.solicitante || '').trim().slice(0, 150),
       justificativa: String(row.justificativa || '').trim().slice(0, 2000),
+      fotoData: typeof row.fotoData === 'string' && /^data:image\/(jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(row.fotoData) && row.fotoData.length <= 2_500_000 ? row.fotoData : null,
+      fotoNome: String(row.fotoNome || '').trim().slice(0, 180),
       usuarioId: req.user.id, status: 'Pendente'
     })).filter(row => /^[0-9a-f-]{36}$/i.test(row.id) && row.item && row.solicitante && row.justificativa && Number.isInteger(row.quantidade) && row.quantidade > 0 && validUnits.has(row.unidade));
     if (items.length !== req.body.items.length) return res.status(400).json({ error: 'Uma ou mais solicitações são inválidas.' });
@@ -495,6 +497,9 @@ app.post('/api/purchase-requests', async (req, res, next) => {
       .catch(error => console.error('Falha ao enviar e-mail imediato de compra:', error));
     res.json({ ok: true, total: items.length });
   } catch (error) { next(error); }
+});
+app.get('/api/purchase-requests/:id/photo', async (req, res, next) => {
+  try { const row = await prisma.purchaseRequest.findUnique({ where: { id: req.params.id }, select: { usuarioId: true, fotoData: true, fotoNome: true } }); if (!row?.fotoData) return res.status(404).json({ error: 'Foto não encontrada.' }); if (req.user.role !== 'admin' && row.usuarioId !== req.user.id) return res.status(403).json({ error: 'Acesso negado.' }); const match = row.fotoData.match(/^data:(image\/(?:jpeg|png|webp));base64,/); if (!match) return res.status(415).end(); res.type(match[1]).send(Buffer.from(row.fotoData.slice(match[0].length), 'base64')); } catch (error) { next(error); }
 });
 app.patch('/api/purchase-requests/:id/status', purchaseStatusApproverOnly, async (req, res, next) => {
   try {

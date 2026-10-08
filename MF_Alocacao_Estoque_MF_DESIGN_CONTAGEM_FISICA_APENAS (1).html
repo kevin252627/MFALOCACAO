@@ -427,6 +427,7 @@ body[data-theme="dark"] .notification-panel{background:#112c45;color:#fff;border
       <div class="field"><label for="purchaseQuantity">Quantidade</label><input id="purchaseQuantity" type="number" min="1" step="1" required placeholder="1"></div>
       <div class="field"><label for="purchaseRequester">Nome de quem fez a solicitação</label><input id="purchaseRequester" required maxlength="150" placeholder="Digite o nome da pessoa"></div>
       <div class="field wide"><label for="purchaseReason">Justificativa / motivo da compra</label><textarea id="purchaseReason" maxlength="2000" required placeholder="Explique por que este material é necessário"></textarea></div>
+      <div class="field wide"><label for="purchasePhoto">Foto do item (opcional)</label><input id="purchasePhoto" type="file" accept="image/jpeg,image/png,image/webp"><small>Máximo de 1,8 MB.</small></div>
       <div class="purchase-actions"><button class="secondary" type="button" onclick="closePurchaseForm()">Cancelar</button><button class="primary" type="submit">Enviar solicitação</button></div>
     </form>
     <div class="toolbar"><input id="purchaseSearch" class="search" placeholder="🔎 Pesquisar solicitações..." oninput="renderPurchaseRequests()"><select id="purchaseStatusFilter" onchange="renderPurchaseRequests()"><option value="">Todos os status</option><option>Pendente</option><option>Aprovada</option><option>Rejeitada</option></select></div>
@@ -1076,9 +1077,10 @@ async function submitPurchaseRequest(event){
   const reasonField=document.getElementById("purchaseReason");
   if(!reasonField.value.trim()){event.preventDefault();reasonField.setCustomValidity("Informe o motivo da compra para continuar.");reasonField.reportValidity();reasonField.setCustomValidity("");reasonField.focus();return}
   event.preventDefault();if(!canCreatePurchase()){showToast("Kevin01 possui acesso somente para visualizar solicitações.");return}const form=document.getElementById("purchaseForm");if(!form.reportValidity())return;
+  const photo=document.getElementById("purchasePhoto").files[0];if(photo&&photo.size>1800000){showToast("A foto deve ter no máximo 1,8 MB.");return}const fotoData=photo?await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(photo)}):null;
   const uuid=window.crypto?.randomUUID?.()||"xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&3|8)).toString(16)});
   const row={id:uuid,usuarioId:window.currentUser?.id,codigo:document.getElementById("purchaseCode").value.trim(),item:document.getElementById("purchaseItem").value.trim(),quantidade:Number(document.getElementById("purchaseQuantity").value),unidade:document.getElementById("purchaseUnit").value,solicitante:window.currentUser?.nome||document.getElementById("purchaseRequester").value.trim(),justificativa:document.getElementById("purchaseReason").value.trim(),status:"Aguardando sincronização",criadoEm:new Date().toISOString()};
-  const rows=getLocalPurchaseRequests();rows.unshift(row);setLocalPurchaseRequests(rows);window.purchaseRequestRows=rows;
+  row.fotoData=fotoData;row.fotoNome=photo?.name||"";const rows=getLocalPurchaseRequests();rows.unshift(row);setLocalPurchaseRequests(rows);window.purchaseRequestRows=rows;
   if(window.queuePurchaseRequests)window.queuePurchaseRequests([row]);
   else {const key="mf_prisma_pending_v1",pending=JSON.parse(localStorage.getItem(key)||"{}");const userId=window.currentUser?.id||"guest",pendingKey=`purchases_${userId}`;pending[pendingKey]={type:"purchases",unit:userId,items:[...(pending[pendingKey]?.items||[]),row],updatedAt:String(Date.now())};localStorage.setItem(key,JSON.stringify(pending))}
   form.reset();document.getElementById("purchaseRequester").value=window.currentUser?.nome||"";form.hidden=true;renderPurchaseRequests();showToast("Solicitação salva e aguardando sincronização.");
