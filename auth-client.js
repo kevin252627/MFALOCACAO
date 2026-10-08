@@ -14,6 +14,7 @@
   function applyUser(user, verifiedAt = Date.now()) {
     window.currentUser = user;
     if (typeof window.configurePurchaseAccess === 'function') window.configurePurchaseAccess();
+    if (typeof window.loadNotifications === 'function') window.loadNotifications();
     window.purchaseRequestRows = [];
     localStorage.setItem(sessionKey, JSON.stringify({ user, verifiedAt }));
     document.getElementById('loginScreen').hidden = true;

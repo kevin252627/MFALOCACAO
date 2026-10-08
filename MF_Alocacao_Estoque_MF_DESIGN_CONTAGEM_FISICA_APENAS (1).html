@@ -268,6 +268,7 @@ body[data-theme="dark"] .menu-btn{background:linear-gradient(145deg,#173b5d,#102
 body[data-theme="dark"] .secondary{background:#173b5d;color:#fff;border-color:#3c6b88}
 body[data-theme="dark"] .toolbar,body[data-theme="dark"] .stat,body[data-theme="dark"] .tablewrap,body[data-theme="dark"] .box,body[data-theme="dark"] .menu-card{background:#112c45}
 .theme-toggle{height:36px;padding:0 12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-size:12px}
+.notification-wrap{position:relative;z-index:3}.notification-button{height:36px;min-width:42px;padding:0 10px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.3);font-size:17px}.notification-badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 4px;margin-left:3px;border-radius:20px;background:#df5a57;color:#fff;font-size:11px}.notification-panel{display:none;position:absolute;right:0;top:44px;width:min(360px,calc(100vw - 30px));max-height:420px;overflow:auto;background:var(--mf-card);color:var(--mf-ink);border:1px solid var(--mf-line);border-radius:12px;box-shadow:0 15px 40px rgba(0,0,0,.3);padding:12px}.notification-panel.show{display:block}.notification-item{padding:10px;border-bottom:1px solid var(--mf-line);font-size:13px}.notification-item small{display:block;color:var(--mf-muted);margin-top:4px}
 @media(max-width:700px){header{padding:14px 16px}.logoImg{width:82px;height:52px}.brand h1{font-size:17px}.theme-toggle{position:absolute;right:16px;top:14px}}
 
 </style>
@@ -304,6 +305,7 @@ body[data-theme="dark"] .toolbar,body[data-theme="dark"] .stat,body[data-theme="
   <button id="headerRestore" class="secondary" onclick="restoreBackup()">Restaurar backup</button>
   <button id="headerExport" class="secondary" onclick="exportCSV()">Exportar CSV</button>
   <button id="themeToggle" class="theme-toggle" type="button" onclick="toggleAppTheme()" aria-label="Alternar tema">☼ Tema claro</button>
+  <div class="notification-wrap" id="notificationWrap" hidden><button class="notification-button" type="button" onclick="toggleNotifications()" aria-label="Notificações">♢<span id="notificationBadge" class="notification-badge" hidden>0</span></button><div id="notificationPanel" class="notification-panel"></div></div>
   <span id="authIdentity" class="auth-identity" hidden></span>
   <button id="logoutButton" class="secondary" onclick="logoutApp()" hidden>Sair</button>
 </header>
@@ -479,6 +481,12 @@ function setAppTheme(theme){
   const toggle=document.getElementById("themeToggle");if(toggle){toggle.textContent=selected==="light"?"☾ Tema escuro":"☼ Tema claro";toggle.setAttribute("aria-label",selected==="light"?"Ativar tema escuro":"Ativar tema claro");}
 }
 function toggleAppTheme(){setAppTheme(document.body.dataset.theme==="light"?"dark":"light");}
+async function loadNotifications(){
+  if(window.currentUser?.role!=="admin")return;
+  document.getElementById("notificationWrap")?.removeAttribute("hidden");
+  try{const response=await fetch("/api/notifications",{credentials:"same-origin"});if(!response.ok)return;const result=await response.json();const badge=document.getElementById("notificationBadge");badge.textContent=result.unread;badge.hidden=!result.unread;const panel=document.getElementById("notificationPanel");panel.innerHTML=result.notifications.length?result.notifications.map(item=>`<div class="notification-item"><strong>${esc(item.titulo)}</strong><div>${esc(item.mensagem)}</div><small>${new Date(item.criadoEm).toLocaleString("pt-BR")}</small></div>`).join(""):"<div class=notification-item>Nenhuma notificação.</div>";}catch{}
+}
+async function toggleNotifications(){const panel=document.getElementById("notificationPanel");panel.classList.toggle("show");if(panel.classList.contains("show")){await loadNotifications();await fetch("/api/notifications/read",{method:"PATCH",credentials:"same-origin"});document.getElementById("notificationBadge").hidden=true;}}
 setAppTheme(localStorage.getItem("mf_app_theme_v1")||"dark");
 async function loadAppSettings(){
   const target=document.getElementById("settingsAccounts");if(!target)return;
@@ -1041,7 +1049,8 @@ function renderPurchaseRequests(){
     const controls=canUpdate?`<select aria-label="Atualizar status" onchange="updatePurchaseStatus('${esc(x.id)}',this.value)"><option value="">Alterar status</option><option>Pendente</option><option>Aprovada</option><option>Rejeitada</option></select>`:x.status==="Aguardando sincronização"?"Aguardando envio":"—";
     const user=window.currentUser;
     const canDelete=isCurrentPurchaseRequester(x);
-    const remove=canDelete?` <button type="button" class="danger" style="height:34px;padding:0 10px;font-size:12px" onclick="deletePurchaseRequest('${esc(x.id)}')">Excluir</button>`:"";
+    const adminRemove=window.currentUser?.role==="admin"?` <button type="button" class="danger" style="height:34px;padding:0 10px;font-size:12px" onclick="deletePurchaseRequestAdmin('${esc(x.id)}')">Excluir tudo</button>`:"";
+    const remove=(canDelete?` <button type="button" class="danger" style="height:34px;padding:0 10px;font-size:12px" onclick="deletePurchaseRequest('${esc(x.id)}')">Excluir</button>`:"")+adminRemove;
     const genericRequester=String(x.solicitante||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().match(/^usu.?rio\s+([123])$/);
     const genericNames={"1":"davy","2":"GABRIEL","3":"visitante"};
     const requesterName=x.usuario?.nome||x.solicitante||"—";
@@ -1051,6 +1060,7 @@ function renderPurchaseRequests(){
   }).join(""):`<tr><td colspan="8" class="empty">Nenhuma solicitação encontrada.</td></tr>`;
   document.getElementById("purchaseSummary").textContent=`${rows.length} solicitação(ões) • ${rows.filter(x=>x.status==="Pendente").length} pendente(s)`;
 }
+async function deletePurchaseRequestAdmin(id){if(!confirm("Excluir esta solicitação do aplicativo para todos?"))return;const response=await fetch(`/api/purchase-requests/${encodeURIComponent(id)}/admin`,{method:"DELETE",credentials:"same-origin"});if(!response.ok){showToast("Não foi possível excluir a solicitação.");return}window.purchaseRequestRows=(window.purchaseRequestRows||[]).filter(row=>row.id!==id);renderPurchaseRequests();showToast("Solicitação excluída para todos.");}
 function openPurchaseReason(id){
   const row=(window.purchaseRequestRows||[]).find(x=>x.id===id);if(!row)return;
   if(!canApprovePurchases()&&!isCurrentPurchaseRequester(row)){showToast("A justificativa fica disponível ao Rafael e ao solicitante.");return}

@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const { execFile } = require('node:child_process');
 const { PrismaClient } = require('@prisma/client');
+const nodemailer = require('nodemailer');
 const { createCountWorkbook } = require('./spreadsheet-export.cjs');
 const prisma = new PrismaClient();
 const app = express();
@@ -22,6 +23,7 @@ const sessionSecret = process.env.AUTH_SECRET;
 if (!sessionSecret || sessionSecret.length < 32) throw new Error('AUTH_SECRET deve ter pelo menos 32 caracteres.');
 const scrypt = promisify(crypto.scrypt);
 const execFileAsync = promisify(execFile);
+const mailer = process.env.SMTP_HOST ? nodemailer.createTransport({ host: process.env.SMTP_HOST, port: Number(process.env.SMTP_PORT || 587), secure: process.env.SMTP_SECURE === 'true', auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD } : undefined }) : null;
 let databaseReady = false;
 const loginFailures = new Map();
 const requesterNamesByUsername = { mf01: 'davy', mf02: 'GABRIEL', mf03: 'visitante' };
@@ -44,6 +46,21 @@ function configuredAccounts() {
     { username: process.env.USER2_USERNAME || 'usuario2', previousUsername: process.env.USER2_PREVIOUS_USERNAME || '', nome: process.env.USER2_NAME || 'Usuário 2', password: process.env.USER2_PASSWORD, role: 'user' },
     { username: process.env.USER3_USERNAME || 'usuario3', previousUsername: process.env.USER3_PREVIOUS_USERNAME || '', nome: process.env.USER3_NAME || 'Usuário 3', password: process.env.USER3_PASSWORD, role: 'user' }
   ].map((account, index) => ({ ...account, accountKey: ['kevin', 'rafael', 'mf01', 'mf02', 'mf03'][index] }));
+}
+async function notifyAdmins(titulo, mensagem) {
+  const admins = await prisma.appUser.findMany({ where: { role: 'admin', accountKey: { in: ['kevin', 'rafael'] } }, select: { id: true } });
+  if (admins.length) await prisma.notification.createMany({ data: admins.map(user => ({ usuarioId: user.id, titulo, mensagem })) });
+}
+async function sendMail(subject, text, to) {
+  if (!mailer || !process.env.SMTP_FROM) return;
+  await mailer.sendMail({ from: process.env.SMTP_FROM, to, subject, text });
+}
+async function sendDailyPurchaseDigest() {
+  if (!databaseReady) return;
+  const requests = await prisma.purchaseRequest.findMany({ where: { status: 'Pendente', criadoEm: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, orderBy: { criadoEm: 'asc' } });
+  if (!requests.length) return;
+  const lines = requests.map(row => `- ${row.item} | código ${row.codigo || '-'} | quantidade ${row.quantidade} | unidade ${row.unidade} | solicitante ${row.solicitante}`).join('\n');
+  await sendMail('MF Estoque — solicitações de compra pendentes', `Solicitações pendentes nas últimas 24 horas:\n\n${lines}`, 'rafael.souza@mfordenhas.com.br');
 }
 async function provisionAccounts() {
   const accounts = configuredAccounts();
@@ -179,6 +196,16 @@ app.post('/api/auth/logout', (_req, res) => {
 app.get('/api/auth/me', requireAuth, (req, res) => res.json({ user: req.user }));
 app.use('/api', requireAuth);
 app.use('/api', (req, res, next) => databaseReady ? next() : res.status(503).json({ error: 'Banco de dados inicializando. Tente novamente em instantes.' }));
+app.get('/api/notifications', async (req, res, next) => {
+  try {
+    const notifications = await prisma.notification.findMany({ where: { usuarioId: req.user.id }, orderBy: { criadoEm: 'desc' }, take: 50 });
+    res.json({ unread: notifications.filter(item => !item.lida).length, notifications });
+  } catch (error) { next(error); }
+});
+app.patch('/api/notifications/read', async (req, res, next) => {
+  try { await prisma.notification.updateMany({ where: { usuarioId: req.user.id, lida: false }, data: { lida: true } }); res.json({ ok: true }); }
+  catch (error) { next(error); }
+});
 const kevinSettingsOnly = (req, res, next) => isKevinAccount(req.user)
   ? next()
   : res.status(403).json({ error: 'Configurações restritas ao Kevin01.' });
@@ -456,8 +483,20 @@ app.patch('/api/purchase-requests/:id/status', purchaseStatusApproverOnly, async
     if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
     const status = String(req.body.status || '');
     if (!['Pendente', 'Aprovada', 'Rejeitada'].includes(status)) return res.status(400).json({ error: 'Status inválido.' });
-    res.json(await prisma.purchaseRequest.update({ where: { id: req.params.id }, data: { status } }));
+    const updated = await prisma.purchaseRequest.update({ where: { id: req.params.id }, data: { status }, include: { usuario: true } });
+    if (status === 'Aprovada') {
+      await notifyAdmins('Solicitação aprovada', `A solicitação de ${updated.item} foi aprovada.`);
+      await sendMail('MF Estoque — solicitação aprovada', `A solicitação abaixo foi aprovada:\n\nItem: ${updated.item}\nCódigo: ${updated.codigo || '-'}\nQuantidade: ${updated.quantidade}\nSolicitante: ${updated.solicitante}`, 'contato.mfordenhas@gmail.com');
+    }
+    res.json(updated);
   } catch (error) { next(error); }
+});
+app.delete('/api/purchase-requests/:id/admin', adminOnly, async (req, res, next) => {
+  try {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) return res.status(400).json({ error: 'Identificador inválido.' });
+    await prisma.purchaseRequest.delete({ where: { id: req.params.id } });
+    res.json({ ok: true });
+  } catch (error) { if (error.code === 'P2025') return res.status(404).json({ error: 'Solicitação não encontrada.' }); next(error); }
 });
 app.delete('/api/purchase-requests/:id', async (req, res, next) => {
   try {
@@ -502,6 +541,7 @@ async function startServer() {
       await provisionAccounts();
       databaseReady = true;
       console.log('Banco de dados pronto; estrutura existente reutilizada ou criada pelo Prisma.');
+      setInterval(() => sendDailyPurchaseDigest().catch(error => console.error('Falha no resumo diário de compras:', error)), 24 * 60 * 60 * 1000).unref();
     } catch (error) {
       console.error('Não foi possível preparar o banco; nova tentativa em 30 segundos:', String(error.stderr || error.message).trim());
       setTimeout(initializeDatabase, 30000).unref();
