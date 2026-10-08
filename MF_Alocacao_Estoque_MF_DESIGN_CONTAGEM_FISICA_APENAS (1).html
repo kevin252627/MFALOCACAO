@@ -266,6 +266,8 @@ header:after{background:linear-gradient(135deg,transparent,rgba(78,155,214,.4));
 .container{max-width:1320px;margin:26px auto}.menu-screen{min-height:calc(100vh - 104px)}
 .menu-card,.toolbar,.stat,.tablewrap,.box,.settings-card{border-radius:var(--mf-radius);box-shadow:0 8px 26px rgba(23,59,93,.10)}
 .menu-card{border-top:5px solid #4e9bd6}.menu-btn{border-radius:var(--mf-radius);background:linear-gradient(145deg,#fff,#edf4f8);border-color:#c4d6e3;color:#173b5d}.menu-btn:hover{border-color:#4e9bd6;box-shadow:0 8px 20px rgba(78,155,214,.18)}
+.menu-btn.allocation-cover{position:relative;overflow:hidden;min-height:180px;background:linear-gradient(180deg,rgba(16,45,73,.18),rgba(16,45,73,.92)),url('./allocation-cover.png') center/cover no-repeat;border-color:#4e9bd6;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.65)}
+.menu-btn.allocation-cover>*{position:relative;z-index:1}.menu-btn.allocation-cover .menu-icon{background:rgba(16,45,73,.78);border-radius:8px;padding:5px 8px}.menu-btn.allocation-cover span{color:#e6f2fb}.menu-btn.allocation-cover:hover{border-color:#8cc5e9;box-shadow:0 10px 24px rgba(23,59,93,.28);filter:saturate(1.06)}
 .primary{background:linear-gradient(135deg,#173b5d,#28658c);box-shadow:0 5px 14px rgba(23,59,93,.22)}
 .secondary{background:#edf4f8;color:#173b5d;border-color:#b8ccda}.tab.active{background:linear-gradient(135deg,#173b5d,#4e9bd6);border-color:#4e9bd6}
 body[data-theme="dark"]{--mf-bg:#0b1e30;--mf-card:#112c45;--mf-line:#2a506c;--mf-muted:#b8ccdc;background:radial-gradient(circle at 15% 0%,rgba(78,155,214,.22),transparent 36%),#0b1e30;color:#edf5fa}
@@ -320,8 +322,8 @@ body[data-theme="dark"] .notification-panel{background:#112c45;color:#fff;border
     <h2>Menu de entrada</h2>
     <p>Selecione o módulo que deseja acessar.</p>
     <div class="menu-grid">
-      <button class="menu-btn" onclick="openModule('matriz')"><div class="menu-icon">▣</div><strong>Alocação matriz</strong><span>Controle de códigos, itens e prateleiras da matriz</span></button>
-      <button class="menu-btn" onclick="openModule('filial')"><div class="menu-icon">▣</div><strong>Alocação filial</strong><span>Controle de códigos, itens e prateleiras da filial</span></button>
+      <button class="menu-btn allocation-cover" onclick="openModule('matriz')"><div class="menu-icon">▣</div><strong>Alocação matriz</strong><span>Controle de códigos, itens e prateleiras da matriz</span></button>
+      <button class="menu-btn allocation-cover" onclick="openModule('filial')"><div class="menu-icon">▣</div><strong>Alocação filial</strong><span>Controle de códigos, itens e prateleiras da filial</span></button>
       <button id="countMatrizMenuButton" class="menu-btn" onclick="openModule('contagemMatriz')"><div class="menu-icon">▤</div><strong>Contagem de estoque matriz</strong><span>Contagem física atualizada com os itens da alocação matriz</span></button>
       <button id="countFilialMenuButton" class="menu-btn" onclick="openModule('contagemFilial')"><div class="menu-icon">▤</div><strong>Contagem estoque filial</strong><span>Contagem física atualizada com os itens da alocação filial</span></button>
       <button class="menu-btn" onclick="openModule('compras')"><div class="menu-icon">🛒</div><strong>Solicitação de compra</strong><span>Cadastre e acompanhe pedidos de compra</span></button>
