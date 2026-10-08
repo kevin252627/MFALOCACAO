@@ -59,10 +59,10 @@ async function sendMail(subject, text, to) {
 }
 async function sendDailyPurchaseDigest() {
   if (!databaseReady) return;
-  const requests = await prisma.purchaseRequest.findMany({ where: { status: 'Pendente', criadoEm: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }, orderBy: { criadoEm: 'asc' } });
+  const requests = await prisma.purchaseRequest.findMany({ where: { status: 'Pendente' }, orderBy: { criadoEm: 'asc' } });
   if (!requests.length) return;
   const lines = requests.map(row => `- ${row.item} | código ${row.codigo || '-'} | quantidade ${row.quantidade} | unidade ${row.unidade} | solicitante ${row.solicitante}`).join('\n');
-  await sendMail('MF Estoque — solicitações de compra pendentes', `Solicitações pendentes nas últimas 24 horas:\n\n${lines}`, 'rafael.souza@mfordenhas.com.br');
+  await sendMail('MF Estoque — solicitações de compra pendentes', `Todas as solicitações de compra ainda pendentes:\n\n${lines}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com']);
 }
 async function provisionAccounts() {
   const accounts = configuredAccounts();
@@ -479,7 +479,7 @@ app.post('/api/purchase-requests', async (req, res, next) => {
     await prisma.purchaseRequest.createMany({ data: items, skipDuplicates: true });
     await notifyAdmins('Nova solicitação de compra', `${items.length} solicitação(ões) nova(s) criada(s) por ${req.user.nome}.`);
     const lines = items.map(row => `- ${row.item} | código ${row.codigo || '-'} | quantidade ${row.quantidade} | unidade ${row.unidade} | solicitante ${row.solicitante}\n  Motivo: ${row.justificativa}`).join('\n');
-    sendMail('MF Estoque — nova solicitação de compra', `Uma nova solicitação de compra foi criada:\n\n${lines}`, 'rafael.souza@mfordenhas.com.br')
+    sendMail('MF Estoque — nova solicitação de compra', `Uma nova solicitação de compra foi criada:\n\n${lines}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com'])
       .catch(error => console.error('Falha ao enviar e-mail imediato de compra:', error));
     res.json({ ok: true, total: items.length });
   } catch (error) { next(error); }
@@ -492,7 +492,7 @@ app.patch('/api/purchase-requests/:id/status', purchaseStatusApproverOnly, async
     const updated = await prisma.purchaseRequest.update({ where: { id: req.params.id }, data: { status }, include: { usuario: true } });
     if (status === 'Aprovada') {
       await notifyAdmins('Solicitação aprovada', `A solicitação de ${updated.item} foi aprovada.`);
-      await sendMail('MF Estoque — solicitação aprovada', `A solicitação abaixo foi aprovada:\n\nItem: ${updated.item}\nCódigo: ${updated.codigo || '-'}\nQuantidade: ${updated.quantidade}\nSolicitante: ${updated.solicitante}`, 'contato.mfordenhas@gmail.com');
+      await sendMail('MF Estoque — solicitação aprovada', `A solicitação abaixo foi aprovada:\n\nItem: ${updated.item}\nCódigo: ${updated.codigo || '-'}\nQuantidade: ${updated.quantidade}\nSolicitante: ${updated.solicitante}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com']);
     }
     res.json(updated);
   } catch (error) { next(error); }
@@ -551,6 +551,7 @@ async function startServer() {
       await provisionAccounts();
       databaseReady = true;
       console.log('Banco de dados pronto; estrutura existente reutilizada ou criada pelo Prisma.');
+      sendDailyPurchaseDigest().catch(error => console.error('Falha ao enviar pendências antigas:', error));
       setInterval(() => sendDailyPurchaseDigest().catch(error => console.error('Falha no resumo diário de compras:', error)), 24 * 60 * 60 * 1000).unref();
     } catch (error) {
       console.error('Não foi possível preparar o banco; nova tentativa em 30 segundos:', String(error.stderr || error.message).trim());
