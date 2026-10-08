@@ -1059,7 +1059,7 @@ function renderPurchaseRequests(){
     const genericRequester=String(x.solicitante||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().match(/^usu.?rio\s+([123])$/);
     const genericNames={"1":"davy","2":"GABRIEL","3":"visitante"};
     const requesterName=x.usuario?.nome||x.solicitante||"—";
-    const canViewReason=canApprovePurchases()||isCurrentPurchaseRequester(x);
+    const canViewReason=canApprovePurchases()||isKevinUser()||isRafaelUser()||isCurrentPurchaseRequester(x);
     const product=canViewReason?`<button type="button" class="secondary" style="height:auto;min-height:34px;padding:7px 10px;text-align:left" onclick="openPurchaseReason('${esc(x.id)}')" aria-label="Ver justificativa de ${esc(x.item)}">${esc(x.item)} <span aria-hidden="true">· Ver motivo</span></button>`:esc(x.item);
     return `<tr><td class="code">${esc(x.codigo||"—")}</td><td>${product}</td><td>${x.unidade==="filial"?"Filial":"Matriz"}</td><td>${Number(x.quantidade)||0}</td><td>${esc(requesterName)}</td><td><span class="status-pill ${statusClass}">${esc(x.status||"Pendente")}</span></td><td title="${date}">${date}</td><td>${controls}${remove}</td></tr>`;
   }).join(""):`<tr><td colspan="8" class="empty">Nenhuma solicitação encontrada.</td></tr>`;
