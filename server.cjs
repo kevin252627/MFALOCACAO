@@ -77,6 +77,17 @@ async function sendDailyPurchaseDigest() {
 }
 async function provisionAccounts() {
   const accounts = configuredAccounts();
+  if (process.env.FORCE_SYNC_INITIAL_ACCOUNTS === 'true' && accounts.every(account => account.password)) {
+    for (const account of accounts) {
+      const existing = await prisma.appUser.findUnique({ where: { accountKey: account.accountKey } });
+      if (!existing) continue;
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = (await scrypt(account.password, salt, 64)).toString('hex');
+      await prisma.appUser.update({ where: { id: existing.id }, data: { username: account.username.trim().toLowerCase(), nome: account.nome, role: account.role, passwordHash: `${salt}:${hash}` } });
+    }
+    console.log('Logins iniciais sincronizados com o arquivo .env.');
+    return;
+  }
   for (const account of accounts) {
     if (await prisma.appUser.findUnique({ where: { accountKey: account.accountKey }, select: { id: true } })) continue;
     const username = account.username.trim().toLowerCase();
