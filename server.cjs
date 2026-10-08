@@ -488,7 +488,8 @@ app.post('/api/purchase-requests', async (req, res, next) => {
     })).filter(row => /^[0-9a-f-]{36}$/i.test(row.id) && row.item && row.solicitante && row.justificativa && Number.isInteger(row.quantidade) && row.quantidade > 0 && validUnits.has(row.unidade));
     if (items.length !== req.body.items.length) return res.status(400).json({ error: 'Uma ou mais solicitações são inválidas.' });
     await prisma.purchaseRequest.createMany({ data: items, skipDuplicates: true });
-    await notifyAccounts(['rafael'], 'Nova solicitação para aprovação', `${items.length} solicitação(ões) nova(s) criada(s) por ${req.user.nome}.`);
+    const requesterLabel = ({ davy: 'davy', gabriel: 'gabriel', usuario: 'usuario' })[String(req.user.username || '').toLowerCase()] || String(req.user.nome || '').trim().toLowerCase();
+    await notifyAccounts(['rafael'], 'Nova solicitação para aprovação', `${requesterLabel} solicitou compra.`);
     const lines = items.map(row => `- ${row.item} | código ${row.codigo || '-'} | quantidade ${row.quantidade} | unidade ${row.unidade} | solicitante ${row.solicitante}\n  Motivo: ${row.justificativa}`).join('\n');
     sendMail('MF Estoque — nova solicitação de compra', `Uma nova solicitação de compra foi criada:\n\n${lines}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com'])
       .catch(error => console.error('Falha ao enviar e-mail imediato de compra:', error));
@@ -502,7 +503,7 @@ app.patch('/api/purchase-requests/:id/status', purchaseStatusApproverOnly, async
     if (!['Pendente', 'Aprovada', 'Rejeitada'].includes(status)) return res.status(400).json({ error: 'Status inválido.' });
     const updated = await prisma.purchaseRequest.update({ where: { id: req.params.id }, data: { status }, include: { usuario: true } });
     if (status === 'Aprovada') {
-      await notifyAccounts(['kevin'], 'Solicitação aprovada por Rafael', `A solicitação de ${updated.item} foi aprovada por Rafael.`);
+      await notifyAccounts(['kevin'], 'Solicitação aprovada', 'rafael aprovou solicitação de compra.');
       await sendMail('MF Estoque — solicitação aprovada', `A solicitação abaixo foi aprovada:\n\nItem: ${updated.item}\nCódigo: ${updated.codigo || '-'}\nQuantidade: ${updated.quantidade}\nSolicitante: ${updated.solicitante}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com']);
     }
     res.json(updated);
