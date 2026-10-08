@@ -1075,7 +1075,7 @@ function openPurchaseReason(id){
   document.getElementById("purchaseReasonSub").textContent=`${row.item||"Produto"} • ${row.unidade==="filial"?"Filial":"Matriz"} • Quantidade: ${Number(row.quantidade)||0}`;
   document.getElementById("purchaseReasonText").textContent=String(row.justificativa||"").trim()||"Este pedido antigo não possui justificativa registrada.";
   const reasonPhoto=document.getElementById("purchaseReasonPhoto");if(row.fotoData){reasonPhoto.src=row.fotoData;reasonPhoto.style.display="block";}else if(row.temFoto&&(isKevinUser()||isRafaelUser())){reasonPhoto.src=`/api/purchase-requests/${encodeURIComponent(id)}/photo`;reasonPhoto.style.display="block";}else{reasonPhoto.removeAttribute("src");reasonPhoto.style.display="none";}
-  const photoButton=document.getElementById("purchasePhotoModalButton");photoButton.hidden=!(row.temFoto||row.fotoData)||!(isKevinUser()||isRafaelUser());if(!photoButton.hidden)photoButton.onclick=()=>viewPurchasePhoto(id);
+  const photoButton=document.getElementById("purchasePhotoModalButton");const adminViewer=isKevinUser()||isRafaelUser();const hasPhoto=Boolean(row.temFoto||row.fotoData||row.fotoNome);photoButton.hidden=!adminViewer;photoButton.disabled=!hasPhoto;photoButton.textContent=hasPhoto?"Ver foto":"Sem foto anexada";if(adminViewer)photoButton.onclick=()=>hasPhoto?viewPurchasePhoto(id):showToast("Esta solicitação não possui foto anexada.");
   document.getElementById("purchaseReasonModal").classList.add("show");
 }
 function closePurchaseReason(){document.getElementById("purchaseReasonModal")?.classList.remove("show")}
