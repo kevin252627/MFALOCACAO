@@ -440,6 +440,7 @@ body[data-theme="dark"] .notification-panel{background:#112c45;color:#fff;border
   <div class="box">
     <h2 id="purchaseReasonTitle">Justificativa da solicitação</h2>
     <div class="sub" id="purchaseReasonSub"></div>
+    <img id="purchaseReasonPhoto" alt="Foto do item solicitado" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:10px;border:1px solid var(--mf-line);background:#071a36;margin:12px 0">
     <div id="purchaseReasonText" style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;color:#e6efff;min-height:48px"></div>
     <div class="modal-actions"><button id="purchasePhotoModalButton" class="secondary" type="button" hidden>Ver foto</button><button class="secondary" type="button" onclick="closePurchaseReason()">Fechar</button></div>
   </div>
@@ -1072,6 +1073,7 @@ function openPurchaseReason(id){
   document.getElementById("purchaseReasonTitle").textContent="Justificativa da solicitação";
   document.getElementById("purchaseReasonSub").textContent=`${row.item||"Produto"} • ${row.unidade==="filial"?"Filial":"Matriz"} • Quantidade: ${Number(row.quantidade)||0}`;
   document.getElementById("purchaseReasonText").textContent=String(row.justificativa||"").trim()||"Este pedido antigo não possui justificativa registrada.";
+  const reasonPhoto=document.getElementById("purchaseReasonPhoto");if(row.fotoData){reasonPhoto.src=row.fotoData;reasonPhoto.style.display="block";}else if(row.temFoto&&(isKevinUser()||isRafaelUser())){reasonPhoto.src=`/api/purchase-requests/${encodeURIComponent(id)}/photo`;reasonPhoto.style.display="block";}else{reasonPhoto.removeAttribute("src");reasonPhoto.style.display="none";}
   const photoButton=document.getElementById("purchasePhotoModalButton");photoButton.hidden=!(row.temFoto||row.fotoData)||!(isKevinUser()||isRafaelUser());if(!photoButton.hidden)photoButton.onclick=()=>viewPurchasePhoto(id);
   document.getElementById("purchaseReasonModal").classList.add("show");
 }
