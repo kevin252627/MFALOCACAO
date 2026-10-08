@@ -1,3 +1,7 @@
 node_modules/
 .env
 *.log
+.env
+*.docx
+Contagem_Matriz_*.xlsx
+apps/Contagem_Matriz_*.xlsx
