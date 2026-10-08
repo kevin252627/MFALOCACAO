@@ -475,6 +475,7 @@ app.post('/api/purchase-requests', async (req, res, next) => {
     })).filter(row => /^[0-9a-f-]{36}$/i.test(row.id) && row.item && row.solicitante && row.justificativa && Number.isInteger(row.quantidade) && row.quantidade > 0 && validUnits.has(row.unidade));
     if (items.length !== req.body.items.length) return res.status(400).json({ error: 'Uma ou mais solicitações são inválidas.' });
     await prisma.purchaseRequest.createMany({ data: items, skipDuplicates: true });
+    await notifyAdmins('Nova solicitação de compra', `${items.length} solicitação(ões) nova(s) criada(s) por ${req.user.nome}.`);
     res.json({ ok: true, total: items.length });
   } catch (error) { next(error); }
 });
