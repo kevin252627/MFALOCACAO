@@ -427,7 +427,7 @@ body[data-theme="dark"] .notification-panel{background:#112c45;color:#fff;border
       <div class="field"><label for="purchaseQuantity">Quantidade</label><input id="purchaseQuantity" type="number" min="1" step="1" required placeholder="1"></div>
       <div class="field"><label for="purchaseRequester">Nome de quem fez a solicitação</label><input id="purchaseRequester" required maxlength="150" placeholder="Digite o nome da pessoa"></div>
       <div class="field wide"><label for="purchaseReason">Justificativa / motivo da compra</label><textarea id="purchaseReason" maxlength="2000" required placeholder="Explique por que este material é necessário"></textarea></div>
-      <div class="field wide"><label for="purchasePhoto">Foto do item (opcional)</label><input id="purchasePhoto" type="file" accept="image/jpeg,image/png,image/webp"><small>Máximo de 1,8 MB.</small></div>
+      <div class="field wide"><label for="purchasePhoto">Arquivo do item (opcional)</label><input id="purchasePhoto" type="file"><small>Fotos, PDF, documentos ou planilhas. Máximo de 1,8 MB.</small></div>
       <div class="purchase-actions"><button class="secondary" type="button" onclick="closePurchaseForm()">Cancelar</button><button class="primary" type="submit">Enviar solicitação</button></div>
     </form>
     <div class="toolbar"><input id="purchaseSearch" class="search" placeholder="🔎 Pesquisar solicitações..." oninput="renderPurchaseRequests()"><select id="purchaseStatusFilter" onchange="renderPurchaseRequests()"><option value="">Todos os status</option><option>Pendente</option><option>Aprovada</option><option>Rejeitada</option></select></div>
@@ -440,7 +440,8 @@ body[data-theme="dark"] .notification-panel{background:#112c45;color:#fff;border
   <div class="box">
     <h2 id="purchaseReasonTitle">Justificativa da solicitação</h2>
     <div class="sub" id="purchaseReasonSub"></div>
-    <img id="purchaseReasonPhoto" alt="Foto do item solicitado" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:10px;border:1px solid var(--mf-line);background:#071a36;margin:12px 0">
+    <img id="purchaseReasonPhoto" alt="Imagem do arquivo anexado" style="display:none;width:100%;max-height:360px;object-fit:contain;border-radius:10px;border:1px solid var(--mf-line);background:#071a36;margin:12px 0">
+    <a id="purchaseReasonFile" class="secondary" target="_blank" rel="noopener" style="display:none;margin:12px 0;padding:10px 12px;text-decoration:none">Abrir arquivo anexado</a>
     <div id="purchaseReasonText" style="white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;color:#e6efff;min-height:48px"></div>
     <div class="modal-actions"><button id="purchasePhotoModalButton" class="secondary" type="button" hidden>Ver foto</button><button class="secondary" type="button" onclick="closePurchaseReason()">Fechar</button></div>
   </div>
@@ -1074,8 +1075,8 @@ function openPurchaseReason(id){
   document.getElementById("purchaseReasonTitle").textContent="Justificativa da solicitação";
   document.getElementById("purchaseReasonSub").textContent=`${row.item||"Produto"} • ${row.unidade==="filial"?"Filial":"Matriz"} • Quantidade: ${Number(row.quantidade)||0}`;
   document.getElementById("purchaseReasonText").textContent=String(row.justificativa||"").trim()||"Este pedido antigo não possui justificativa registrada.";
-  const reasonPhoto=document.getElementById("purchaseReasonPhoto");if(row.fotoData){reasonPhoto.src=row.fotoData;reasonPhoto.style.display="block";}else if(row.temFoto&&(isKevinUser()||isRafaelUser())){reasonPhoto.src=`/api/purchase-requests/${encodeURIComponent(id)}/photo`;reasonPhoto.style.display="block";}else{reasonPhoto.removeAttribute("src");reasonPhoto.style.display="none";}
-  const photoButton=document.getElementById("purchasePhotoModalButton");const adminViewer=isKevinUser()||isRafaelUser();const hasPhoto=Boolean(row.temFoto||row.fotoData||row.fotoNome);photoButton.hidden=!adminViewer;photoButton.disabled=!hasPhoto;photoButton.textContent=hasPhoto?"Ver foto":"Sem foto anexada";if(adminViewer)photoButton.onclick=()=>hasPhoto?viewPurchasePhoto(id):showToast("Esta solicitação não possui foto anexada.");
+  const reasonPhoto=document.getElementById("purchaseReasonPhoto"),reasonFile=document.getElementById("purchaseReasonFile");reasonPhoto.style.display="none";reasonPhoto.removeAttribute("src");reasonFile.style.display="none";reasonFile.removeAttribute("href");const fileSource=row.fotoData||((row.temFoto&&(isKevinUser()||isRafaelUser()))?`/api/purchase-requests/${encodeURIComponent(id)}/photo`:"");if(fileSource){const mime=(fileSource.match(/^data:([^;]+);/)||[])[1]||"";if(mime.startsWith("image/")){reasonPhoto.src=fileSource;reasonPhoto.style.display="block";}else{reasonFile.href=fileSource;reasonFile.textContent=`Abrir arquivo: ${row.fotoNome||"anexo"}`;reasonFile.style.display="inline-block";}}
+  const photoButton=document.getElementById("purchasePhotoModalButton");const adminViewer=isKevinUser()||isRafaelUser();const hasPhoto=Boolean(row.temFoto||row.fotoData||row.fotoNome);photoButton.hidden=!adminViewer;photoButton.disabled=!hasPhoto;photoButton.textContent=hasPhoto?"Ver arquivo":"Sem arquivo anexado";if(adminViewer)photoButton.onclick=()=>hasPhoto?viewPurchasePhoto(id):showToast("Esta solicitação não possui arquivo anexado.");
   document.getElementById("purchaseReasonModal").classList.add("show");
 }
 function closePurchaseReason(){document.getElementById("purchaseReasonModal")?.classList.remove("show")}
