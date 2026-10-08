@@ -482,7 +482,7 @@ function setAppTheme(theme){
 }
 function toggleAppTheme(){setAppTheme(document.body.dataset.theme==="light"?"dark":"light");}
 async function loadNotifications(){
-  if(window.currentUser?.role!=="admin")return;
+  if(window.currentUser?.role!=="admin"||!["kevin","rafael"].includes(window.currentUser?.accountKey))return;
   document.getElementById("notificationWrap")?.removeAttribute("hidden");
   try{const response=await fetch("/api/notifications",{credentials:"same-origin"});if(!response.ok)return;const result=await response.json();const badge=document.getElementById("notificationBadge");badge.textContent=result.unread;badge.hidden=!result.unread;const panel=document.getElementById("notificationPanel");panel.innerHTML=result.notifications.length?result.notifications.map(item=>`<div class="notification-item"><strong>${esc(item.titulo)}</strong><div>${esc(item.mensagem)}</div><small>${new Date(item.criadoEm).toLocaleString("pt-BR")}</small></div>`).join(""):"<div class=notification-item>Nenhuma notificação.</div>";}catch{}
 }

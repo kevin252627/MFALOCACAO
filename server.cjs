@@ -53,6 +53,10 @@ async function notifyAdmins(titulo, mensagem) {
   const admins = await prisma.appUser.findMany({ where: { role: 'admin', accountKey: { in: ['kevin', 'rafael'] } }, select: { id: true } });
   if (admins.length) await prisma.notification.createMany({ data: admins.map(user => ({ usuarioId: user.id, titulo, mensagem })) });
 }
+async function notifyAccounts(accountKeys, titulo, mensagem) {
+  const users = await prisma.appUser.findMany({ where: { role: 'admin', accountKey: { in: accountKeys } }, select: { id: true } });
+  if (users.length) await prisma.notification.createMany({ data: users.map(user => ({ usuarioId: user.id, titulo, mensagem })) });
+}
 async function notifyPendingPurchasesOnStartup() {
   const pending = await prisma.purchaseRequest.findMany({ where: { status: 'Pendente' }, orderBy: { criadoEm: 'asc' }, select: { item: true, quantidade: true, solicitante: true } });
   if (!pending.length) return;
@@ -484,7 +488,7 @@ app.post('/api/purchase-requests', async (req, res, next) => {
     })).filter(row => /^[0-9a-f-]{36}$/i.test(row.id) && row.item && row.solicitante && row.justificativa && Number.isInteger(row.quantidade) && row.quantidade > 0 && validUnits.has(row.unidade));
     if (items.length !== req.body.items.length) return res.status(400).json({ error: 'Uma ou mais solicitações são inválidas.' });
     await prisma.purchaseRequest.createMany({ data: items, skipDuplicates: true });
-    await notifyAdmins('Nova solicitação de compra', `${items.length} solicitação(ões) nova(s) criada(s) por ${req.user.nome}.`);
+    await notifyAccounts(['rafael'], 'Nova solicitação para aprovação', `${items.length} solicitação(ões) nova(s) criada(s) por ${req.user.nome}.`);
     const lines = items.map(row => `- ${row.item} | código ${row.codigo || '-'} | quantidade ${row.quantidade} | unidade ${row.unidade} | solicitante ${row.solicitante}\n  Motivo: ${row.justificativa}`).join('\n');
     sendMail('MF Estoque — nova solicitação de compra', `Uma nova solicitação de compra foi criada:\n\n${lines}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com'])
       .catch(error => console.error('Falha ao enviar e-mail imediato de compra:', error));
@@ -498,7 +502,7 @@ app.patch('/api/purchase-requests/:id/status', purchaseStatusApproverOnly, async
     if (!['Pendente', 'Aprovada', 'Rejeitada'].includes(status)) return res.status(400).json({ error: 'Status inválido.' });
     const updated = await prisma.purchaseRequest.update({ where: { id: req.params.id }, data: { status }, include: { usuario: true } });
     if (status === 'Aprovada') {
-      await notifyAdmins('Solicitação aprovada', `A solicitação de ${updated.item} foi aprovada.`);
+      await notifyAccounts(['kevin'], 'Solicitação aprovada por Rafael', `A solicitação de ${updated.item} foi aprovada por Rafael.`);
       await sendMail('MF Estoque — solicitação aprovada', `A solicitação abaixo foi aprovada:\n\nItem: ${updated.item}\nCódigo: ${updated.codigo || '-'}\nQuantidade: ${updated.quantidade}\nSolicitante: ${updated.solicitante}`, ['rafael.souza@mfordenhas.com.br', 'contato.mfordenhas@gmail.com']);
     }
     res.json(updated);
