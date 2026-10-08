@@ -250,6 +250,26 @@ body[data-theme="light"] .login-card p{color:#526b89}
 .account-setting label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}.account-setting input{width:100%}
 @media(max-width:900px){.account-setting{grid-template-columns:1fr 1fr}.account-setting .account-label{grid-column:1/-1}.account-setting button{grid-column:1/-1}}
 
+/* Identidade visual MF: azul institucional, branco e leitura confortável nos dois temas. */
+:root{--mf-brand:#173b5d;--mf-brand-dark:#102d49;--mf-accent:#4e9bd6;--mf-surface:#ffffff;--mf-radius:14px}
+body{font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(145deg,#edf3f8,#dfeaf3);color:#17324d}
+header{min-height:104px;padding:18px 30px;background:linear-gradient(120deg,#102d49 0%,#173b5d 62%,#265a7d 100%);border-bottom:4px solid #4e9bd6}
+header:before{background:linear-gradient(135deg,rgba(78,155,214,.35),transparent);width:470px;height:260px}
+header:after{background:linear-gradient(135deg,transparent,rgba(78,155,214,.4));width:470px;height:260px}
+.brand{gap:18px}.brand h1{font-size:22px;letter-spacing:.4px}.brand p{color:#d6e5f0}.brand .accent{color:#8cc5e9}
+.logoImg{width:118px;height:64px;border-radius:8px;box-shadow:none;object-fit:contain;background:transparent}
+.container{max-width:1320px;margin:26px auto}.menu-screen{min-height:calc(100vh - 104px)}
+.menu-card,.toolbar,.stat,.tablewrap,.box,.settings-card{border-radius:var(--mf-radius);box-shadow:0 8px 26px rgba(23,59,93,.10)}
+.menu-card{border-top:5px solid #4e9bd6}.menu-btn{border-radius:var(--mf-radius);background:linear-gradient(145deg,#fff,#edf4f8);border-color:#c4d6e3;color:#173b5d}.menu-btn:hover{border-color:#4e9bd6;box-shadow:0 8px 20px rgba(78,155,214,.18)}
+.primary{background:linear-gradient(135deg,#173b5d,#28658c);box-shadow:0 5px 14px rgba(23,59,93,.22)}
+.secondary{background:#edf4f8;color:#173b5d;border-color:#b8ccda}.tab.active{background:linear-gradient(135deg,#173b5d,#4e9bd6);border-color:#4e9bd6}
+body[data-theme="dark"]{--mf-bg:#0b1e30;--mf-card:#112c45;--mf-line:#2a506c;--mf-muted:#b8ccdc;background:radial-gradient(circle at 15% 0%,rgba(78,155,214,.22),transparent 36%),#0b1e30;color:#edf5fa}
+body[data-theme="dark"] .menu-btn{background:linear-gradient(145deg,#173b5d,#102d49);border-color:#2a506c;color:#fff}
+body[data-theme="dark"] .secondary{background:#173b5d;color:#fff;border-color:#3c6b88}
+body[data-theme="dark"] .toolbar,body[data-theme="dark"] .stat,body[data-theme="dark"] .tablewrap,body[data-theme="dark"] .box,body[data-theme="dark"] .menu-card{background:#112c45}
+.theme-toggle{height:36px;padding:0 12px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;font-size:12px}
+@media(max-width:700px){header{padding:14px 16px}.logoImg{width:82px;height:52px}.brand h1{font-size:17px}.theme-toggle{position:absolute;right:16px;top:14px}}
+
 </style>
 <meta name="mf-pwa" content="installed">
 <meta name="theme-color" content="#020b1c">
@@ -283,6 +303,7 @@ body[data-theme="light"] .login-card p{color:#526b89}
   <button id="headerBackup" class="secondary" onclick="downloadBackup()">Backup</button>
   <button id="headerRestore" class="secondary" onclick="restoreBackup()">Restaurar backup</button>
   <button id="headerExport" class="secondary" onclick="exportCSV()">Exportar CSV</button>
+  <button id="themeToggle" class="theme-toggle" type="button" onclick="toggleAppTheme()" aria-label="Alternar tema">☼ Tema claro</button>
   <span id="authIdentity" class="auth-identity" hidden></span>
   <button id="logoutButton" class="secondary" onclick="logoutApp()" hidden>Sair</button>
 </header>
@@ -455,7 +476,9 @@ function setAppTheme(theme){
   document.body.dataset.theme=selected;
   localStorage.setItem("mf_app_theme_v1",selected);
   const choice=document.getElementById("appThemeSelect");if(choice)choice.value=selected;
+  const toggle=document.getElementById("themeToggle");if(toggle){toggle.textContent=selected==="light"?"☾ Tema escuro":"☼ Tema claro";toggle.setAttribute("aria-label",selected==="light"?"Ativar tema escuro":"Ativar tema claro");}
 }
+function toggleAppTheme(){setAppTheme(document.body.dataset.theme==="light"?"dark":"light");}
 setAppTheme(localStorage.getItem("mf_app_theme_v1")||"dark");
 async function loadAppSettings(){
   const target=document.getElementById("settingsAccounts");if(!target)return;
