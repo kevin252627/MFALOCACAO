@@ -53,6 +53,13 @@ async function notifyAdmins(titulo, mensagem) {
   const admins = await prisma.appUser.findMany({ where: { role: 'admin', accountKey: { in: ['kevin', 'rafael'] } }, select: { id: true } });
   if (admins.length) await prisma.notification.createMany({ data: admins.map(user => ({ usuarioId: user.id, titulo, mensagem })) });
 }
+async function notifyPendingPurchasesOnStartup() {
+  const pending = await prisma.purchaseRequest.findMany({ where: { status: 'Pendente' }, orderBy: { criadoEm: 'asc' }, select: { item: true, quantidade: true, solicitante: true } });
+  if (!pending.length) return;
+  const preview = pending.slice(0, 8).map(row => `${row.item} (${row.quantidade}) — ${row.solicitante}`).join('; ');
+  const suffix = pending.length > 8 ? `; e mais ${pending.length - 8}.` : '.';
+  await notifyAdmins('Solicitações pendentes', `${pending.length} solicitação(ões) aguardam análise: ${preview}${suffix}`);
+}
 async function sendMail(subject, text, to) {
   if (!mailer || !process.env.SMTP_FROM) return;
   await mailer.sendMail({ from: process.env.SMTP_FROM, to, subject, text });
@@ -551,6 +558,7 @@ async function startServer() {
       await provisionAccounts();
       databaseReady = true;
       console.log('Banco de dados pronto; estrutura existente reutilizada ou criada pelo Prisma.');
+      notifyPendingPurchasesOnStartup().catch(error => console.error('Falha ao criar notificações de pendências:', error));
       sendDailyPurchaseDigest().catch(error => console.error('Falha ao enviar pendências antigas:', error));
       setInterval(() => sendDailyPurchaseDigest().catch(error => console.error('Falha no resumo diário de compras:', error)), 24 * 60 * 60 * 1000).unref();
     } catch (error) {
