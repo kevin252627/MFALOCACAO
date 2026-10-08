@@ -19,6 +19,8 @@ const normalizedAccountName = user => String(user?.nome || '').normalize('NFD').
 const isKevinAccount = user => user?.role === 'admin' && (user?.accountKey === 'kevin' || String(user.username || '').toLowerCase() === 'kevin01' || normalizedAccountName(user).startsWith('kevin'));
 const isRafaelAccount = user => user?.role === 'admin' && (user?.accountKey === 'rafael' || String(user.username || '').toLowerCase() === 'rafael02' || normalizedAccountName(user).startsWith('rafael'));
 const canEditInventoryCodes = req => isKevinAccount(req.user);
+const allocationEditorOnly = (req, res, next) => req.user?.role === 'admin' && (isKevinAccount(req.user) || isRafaelAccount(req.user))
+  ? next() : res.status(403).json({ error: 'A edição de alocação é restrita a Kevin e Rafael.' });
 const sessionSecret = process.env.AUTH_SECRET;
 if (!sessionSecret || sessionSecret.length < 32) throw new Error('AUTH_SECRET deve ter pelo menos 32 caracteres.');
 const scrypt = promisify(crypto.scrypt);
@@ -255,7 +257,7 @@ app.get('/api/inventory/:unit', async (req, res, next) => {
     res.json(await prisma.inventoryItem.findMany({ where: { unidade: req.params.unit }, orderBy: { ordem: 'asc' } }));
   } catch (error) { next(error); }
 });
-app.put('/api/inventory/:unit', async (req, res, next) => {
+app.put('/api/inventory/:unit', allocationEditorOnly, async (req, res, next) => {
   try {
     const unidade = req.params.unit;
     if (!validUnits.has(unidade)) return res.status(400).json({ error: 'Unidade inválida.' });
@@ -277,7 +279,7 @@ app.put('/api/inventory/:unit', async (req, res, next) => {
     res.json({ ok: true, total: req.body.items.length });
   } catch (error) { next(error); }
 });
-app.patch('/api/inventory/:unit/:order', async (req, res, next) => {
+app.patch('/api/inventory/:unit/:order', allocationEditorOnly, async (req, res, next) => {
   try {
     const unidade = req.params.unit;
     const ordem = Number(req.params.order);

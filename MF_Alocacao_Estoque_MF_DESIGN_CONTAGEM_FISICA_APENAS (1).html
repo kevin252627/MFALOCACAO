@@ -533,7 +533,7 @@ function render(){
       <td class="code">${esc(x.codigo)}</td>
       <td>${esc(x.item)}</td>
       <td class="${x.prateleira.trim()?'shelf':'unallocated'}">${esc(x.prateleira.trim()?x.prateleira:"Não alocado")}</td>
-      <td class="actions"><button class="primary" onclick="openEdit(${i})">Editar alocação</button>${isKevinUser()||isRafaelUser()?` <button class="danger" onclick="deleteInventoryProduct(${i})">Excluir produto</button>`:""}</td>
+      <td class="actions">${isKevinUser()||isRafaelUser()?`<button class="primary" onclick="openEdit(${i})">Editar alocação</button> <button class="danger" onclick="deleteInventoryProduct(${i})">Excluir produto</button>`:`<span class="empty-action">Somente leitura</span>`}</td>
     </tr>`).join("") : `<tr><td colspan="4" class="empty">Nenhum item encontrado.</td></tr>`;
 }
 function persist(){
