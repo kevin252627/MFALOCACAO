@@ -62,7 +62,7 @@ async function notifyPendingPurchasesOnStartup() {
   if (!pending.length) return;
   const preview = pending.slice(0, 8).map(row => `${row.item} (${row.quantidade}) — ${row.solicitante}`).join('; ');
   const suffix = pending.length > 8 ? `; e mais ${pending.length - 8}.` : '.';
-  await notifyAdmins('Solicitações pendentes', `${pending.length} solicitação(ões) aguardam análise: ${preview}${suffix}`);
+  await notifyAccounts(['rafael'], 'Solicitações pendentes para aprovação', `${pending.length} solicitação(ões) aguardam análise: ${preview}${suffix}`);
 }
 async function sendMail(subject, text, to) {
   if (!mailer || !process.env.SMTP_FROM) return;
