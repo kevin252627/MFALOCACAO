@@ -24,7 +24,7 @@
     const admin = user.role === 'admin';
     const normalizedName = String(user.nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
     const isKevin = admin && (user.accountKey === 'kevin' || String(user.username || '').toLowerCase() === 'kevin01' || normalizedName.startsWith('kevin'));
-    ['headerBackup', 'headerRestore'].forEach(id => { document.getElementById(id).hidden = !admin; });
+    ['headerBackup', 'headerRestore'].forEach(id => { const element = document.getElementById(id); if (element) element.hidden = !admin; });
     document.getElementById('headerExport').hidden = !admin;
     document.getElementById('appSettingsMenuButton').hidden = !isKevin;
     const requester = document.getElementById('purchaseRequester');
