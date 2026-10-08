@@ -22,6 +22,8 @@
     document.getElementById('authIdentity').textContent = `${user.nome} • ${user.role === 'admin' ? 'Administrador' : 'Usuário'}`;
     document.getElementById('logoutButton').hidden = false;
     const admin = user.role === 'admin';
+    const notificationWrap = document.getElementById('notificationWrap');
+    if (notificationWrap) notificationWrap.hidden = !admin;
     const normalizedName = String(user.nome || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
     const isKevin = admin && (user.accountKey === 'kevin' || String(user.username || '').toLowerCase() === 'kevin01' || normalizedName.startsWith('kevin'));
     ['headerBackup', 'headerRestore'].forEach(id => { const element = document.getElementById(id); if (element) element.hidden = !admin; });
@@ -38,6 +40,8 @@
     document.getElementById('loginScreen').hidden = false;
     document.getElementById('authIdentity').hidden = true;
     document.getElementById('logoutButton').hidden = true;
+    const notificationWrap = document.getElementById('notificationWrap');
+    if (notificationWrap) notificationWrap.hidden = true;
     document.body.dataset.role = '';
     setMessage(message);
   }
