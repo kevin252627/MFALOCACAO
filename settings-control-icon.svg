@@ -1,0 +1,24 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Configurações do aplicativo">
+ <defs>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#62c0ff"/><stop offset=".38" stop-color="#0874ef"/><stop offset="1" stop-color="#063891"/></linearGradient>
+  <linearGradient id="gold" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#fff3a0"/><stop offset=".46" stop-color="#ffd238"/><stop offset="1" stop-color="#d78300"/></linearGradient>
+  <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".4" stop-color="#bbc6d4"/><stop offset=".7" stop-color="#f7f9fc"/><stop offset="1" stop-color="#738196"/></linearGradient>
+  <filter id="shadow" x="-25%" y="-25%" width="155%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000" flood-opacity=".45"/></filter>
+ </defs>
+ <g filter="url(#shadow)" stroke-linejoin="round">
+  <!-- Gear body -->
+  <path d="M53 9h22l4 12a45 45 0 0 1 9 4l11-6 16 16-6 11a45 45 0 0 1 4 9l12 4v22l-12 4a45 45 0 0 1-4 9l6 11-16 16-11-6a45 45 0 0 1-9 4l-4 12H53l-4-12a45 45 0 0 1-9-4l-11 6-16-16 6-11a45 45 0 0 1-4-9L3 81V59l12-4a45 45 0 0 1 4-9l-6-11 16-16 11 6a45 45 0 0 1 9-4z" transform="translate(5 1) scale(.91)" fill="url(#blue)" stroke="#65baff" stroke-width="2.5"/>
+  <circle cx="59" cy="63" r="34" fill="url(#gold)" stroke="#ffeaa0" stroke-width="2"/>
+  <circle cx="59" cy="63" r="23" fill="#08224d" stroke="#bd7600" stroke-width="2"/>
+  <!-- raised controls plate -->
+  <path d="M57 51q0-10 11-12l43-4q11-1 12 10l3 58q1 11-10 12l-48 4q-11 1-12-10z" fill="url(#steel)" stroke="#f2f5fa" stroke-width="2"/>
+  <path d="M63 53q0-7 8-8l40-3q6 0 7 7l2 52q0 7-7 8l-43 3q-7 1-7-7z" fill="url(#blue)" stroke="#8bcfff" stroke-width="1.5"/>
+  <!-- slider rails -->
+  <g fill="url(#steel)" stroke="#58677b" stroke-width="2">
+   <rect x="70" y="57" width="38" height="8" rx="4"/><rect x="70" y="74" width="38" height="8" rx="4"/><rect x="70" y="91" width="38" height="8" rx="4"/>
+  </g>
+  <!-- gold knobs -->
+  <g fill="url(#gold)" stroke="#fff0a5" stroke-width="1.5"><circle cx="97" cy="61" r="7"/><circle cx="81" cy="78" r="7"/><circle cx="100" cy="95" r="7"/></g>
+  <g fill="none" stroke="#fff5c8" stroke-width="1" opacity=".9"><path d="M94 58a4 4 0 0 1 5-2M78 75a4 4 0 0 1 5-2M97 92a4 4 0 0 1 5-2"/></g>
+ </g>
+</svg>

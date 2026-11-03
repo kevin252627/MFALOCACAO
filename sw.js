@@ -1,7 +1,7 @@
-const CACHE = 'mf-estoque-pwa-v93';
+const CACHE = 'mf-estoque-pwa-v108';
 const APP = './MF_Alocacao_Estoque_MF_DESIGN_CONTAGEM_FISICA_APENAS%20(1).html';
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([APP, './manifest.webmanifest', './app-icon.svg', './app-icon-192.png', './app-icon-512.png', './pwa-install.js', './api-client.js', './auth-client.js'])));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll([APP, './manifest.webmanifest', './app-icon.svg', './app-icon-192.png', './app-icon-512.png', './pwa-install.js', './api-client.js', './auth-client.js', './purchase-cart-icon.svg', './allocation-shelf-icon.svg', './settings-control-icon.svg', './stock-count-icon.svg', './mf-app-background.png'])));
   self.skipWaiting();
 });
 self.addEventListener('activate', event => {

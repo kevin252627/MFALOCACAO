@@ -1,0 +1,28 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Carrinho de compras com materiais">
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="0.9" y2="1"><stop stop-color="#54b5ff"/><stop offset=".45" stop-color="#0874ef"/><stop offset="1" stop-color="#0345b8"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2=".9" y2="1"><stop stop-color="#ffe98a"/><stop offset=".5" stop-color="#ffbd16"/><stop offset="1" stop-color="#d98300"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#8e9aaa"/><stop offset=".38" stop-color="#fff"/><stop offset=".7" stop-color="#abb5c3"/><stop offset="1" stop-color="#596779"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity=".42"/></filter>
+  </defs>
+  <g filter="url(#shadow)" stroke-linecap="round" stroke-linejoin="round">
+    <!-- hose and milking components -->
+    <path d="M39 48c-4-14 2-25 12-25s16 10 16 21v27c0 8 9 10 12 3 2-5 2-13 2-19" fill="none" stroke="#dceaff" stroke-width="9"/>
+    <path d="M39 48c-4-14 2-25 12-25s16 10 16 21v27c0 8 9 10 12 3 2-5 2-13 2-19" fill="none" stroke="#fff" stroke-opacity=".64" stroke-width="3"/>
+    <path d="M74 46c-2-11 2-18 9-18s11 7 11 16v17" fill="none" stroke="#dceaff" stroke-width="7"/>
+    <rect x="48" y="14" width="12" height="27" rx="5" fill="url(#steel)" stroke="#e6edf5" stroke-width="1.5"/>
+    <ellipse cx="54" cy="14" rx="7" ry="4" fill="#10131a" stroke="#515967" stroke-width="2"/>
+    <rect x="80" y="17" width="11" height="26" rx="5" fill="url(#steel)" stroke="#e6edf5" stroke-width="1.5"/>
+    <ellipse cx="85.5" cy="17" rx="6.5" ry="4" fill="#10131a" stroke="#515967" stroke-width="2"/>
+    <!-- wrench -->
+    <path d="M102 20a11 11 0 0 0-13 13l17 17 8-8-17-17a11 11 0 0 0 5-5z" fill="url(#steel)" stroke="#e4e9f0" stroke-width="2"/>
+    <path d="M103 27l7 7" stroke="#536174" stroke-width="2"/>
+    <!-- cart handle and basket -->
+    <path d="M13 24h10l7 49c1 7 6 11 13 11h57" fill="none" stroke="url(#gold)" stroke-width="7"/>
+    <path d="M28 39h84l-10 34H34z" fill="url(#blue)" stroke="url(#gold)" stroke-width="4"/>
+    <path d="M34 51h74M36 62h69M43 41l4 30M61 41v31M80 41l-2 31M99 41l-6 30" fill="none" stroke="#78bcff" stroke-width="2.5" opacity=".9"/>
+    <path d="M35 74l6 8M103 74l-6 8" stroke="url(#gold)" stroke-width="4"/>
+    <path d="M49 85l-6 18M92 85l7 18" stroke="url(#blue)" stroke-width="6"/>
+    <circle cx="40" cy="108" r="8" fill="#131820" stroke="url(#gold)" stroke-width="4"/><circle cx="103" cy="108" r="8" fill="#131820" stroke="url(#gold)" stroke-width="4"/>
+  </g>
+</svg>

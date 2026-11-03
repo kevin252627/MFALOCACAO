@@ -499,7 +499,7 @@ app.use((req, res, next) => {
   if (req.method === 'GET' && decodeURIComponent(req.path) === `/${htmlFile}`) return res.sendFile(path.join(__dirname, htmlFile));
   next();
 });
-for (const asset of ['manifest.webmanifest', 'app-icon.svg', 'app-icon-192.png', 'app-icon-512.png', 'pwa-install.js', 'sw.js', 'api-client.js', 'auth-client.js']) {
+for (const asset of ['manifest.webmanifest', 'app-icon.svg', 'app-icon-192.png', 'app-icon-512.png', 'pwa-install.js', 'sw.js', 'api-client.js', 'auth-client.js', 'purchase-cart-icon.svg', 'allocation-shelf-icon.svg', 'settings-control-icon.svg', 'stock-count-icon.svg', 'mf-app-background.png']) {
   app.get(`/${asset}`, (_req, res) => res.sendFile(path.join(__dirname, asset)));
 }
 app.use((error, _req, res, _next) => {
